@@ -5,6 +5,7 @@ import java.util.Scanner;
 public class Client {
     private static final int PORT = 5000;
     private static Socket socket = null;
+    private static DataInputStream inputStream = null;
     private static DataOutputStream outputStream = null;
     private static Scanner scanner = new Scanner(System.in);
 
@@ -19,9 +20,12 @@ public class Client {
             if (option.equals("2")) {
                 signUp();
             }
+            inputStream.close();
+            outputStream.close();
+            socket.close();
 
         } catch (Exception e) {
-            System.out.println("Error" + e.toString());
+            e.printStackTrace();
         }
     }
 
@@ -35,8 +39,15 @@ public class Client {
             socket = new Socket("localhost", PORT);
             System.out.println("Connected to server on port " + PORT);
             outputStream = new DataOutputStream(socket.getOutputStream());
+            inputStream = new DataInputStream(socket.getInputStream());
             outputStream.writeUTF("1:" + username + ":" + password);
-            proceedWithFileTransfer();
+            boolean loggedIn = inputStream.readBoolean();
+            if (loggedIn) {
+                System.out.println("Client logged in. Proceeding with file transfer");
+                proceedWithFileTransfer();
+            } else {
+                System.out.println("Client failed to log in");
+            }
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -59,33 +70,35 @@ public class Client {
         }
     }
 
-    private static void proceedWithFileTransfer() throws Exception {
+    private static void proceedWithFileTransfer() {
         System.out.println("Enter path of file to upload:");
         String path = scanner.nextLine();
         System.out.println("Enter output file name:(output.png)");
         String outputFile = scanner.nextLine();
         sendFile(path, outputFile);
-
-        outputStream.close();
-        socket.close();
     }
 
     private static void sendFile(String path, String outputFile) {
         try {
             int bytes = 0;
             File file = new File(path);
-            FileInputStream fileInputStream = new FileInputStream(file);
-            outputStream.writeLong(file.length());
-            outputStream.writeUTF(outputFile);
-            byte[] buffer = new byte[4 * 1024];
-            while ((bytes = fileInputStream.read(buffer)) != -1) {
-                outputStream.write(buffer, 0, bytes);
-                outputStream.flush();
-                System.out.println("File written to stream");
+            if (file.exists() && file.isFile()) {
+                FileInputStream fileInputStream = new FileInputStream(file);
+                outputStream.writeLong(file.length());
+                outputStream.writeUTF(outputFile);
+                byte[] buffer = new byte[4 * 1024];
+                while ((bytes = fileInputStream.read(buffer)) != -1) {
+                    outputStream.write(buffer, 0, bytes);
+                    outputStream.flush();
+                    System.out.println("File written to stream");
+                }
+                fileInputStream.close();
+            } else {
+                System.out.println("File not found.Aborting transfer");
+                outputStream.writeLong(0);
             }
-            fileInputStream.close();
         } catch (Exception e) {
-            System.out.println("Error in sending file" + e.toString());
+            e.printStackTrace();
         }
 
     }

@@ -6,6 +6,7 @@ import java.net.ServerSocket;
 public class Server {
     private static final int PORT = 5000;
     private static DataInputStream inputStream = null;
+    private static DataOutputStream outputStream = null;
     private static FTPAuthentication authenticator = null;
 
     public static void main(String[] args) {
@@ -15,13 +16,16 @@ public class Server {
             System.out.println("Listening on port 5000");
             Socket clienSocket = serverSocket.accept();
             inputStream = new DataInputStream(clienSocket.getInputStream());
+            outputStream = new DataOutputStream(clienSocket.getOutputStream());
             boolean loggedIn = handleAuth();
+            outputStream.writeBoolean(loggedIn);
             if (loggedIn) {
                 receiveFile();
             } else {
                 System.out.println("Error logging in user");
             }
             inputStream.close();
+            outputStream.close();
             clienSocket.close();
             serverSocket.close();
 
@@ -53,6 +57,10 @@ public class Server {
     private static void receiveFile() {
         try {
             long fileSize = inputStream.readLong();
+            if (fileSize == 0) {
+                System.out.println("File not found. Aborting transfer");
+                return;
+            }
             String outputFile = inputStream.readUTF();
             File file = new File(outputFile);
             FileOutputStream fileOutputStream = new FileOutputStream(file);
@@ -67,7 +75,7 @@ public class Server {
             System.out.println("File uploaded to server");
             fileOutputStream.close();
         } catch (Exception e) {
-            System.out.println("Error in receiving file" + e.toString());
+            e.printStackTrace();
         }
     }
 }
@@ -86,6 +94,7 @@ class FTPAuthentication {
             writer.write(password);
             writer.newLine();
             writer.close();
+            dbWriter.close();
             System.out.println("User has signed up and logged in");
             return true;
         } catch (Exception e) {
