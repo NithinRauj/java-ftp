@@ -19,13 +19,15 @@ public class Server {
         try {
             while (true) {
                 ServerSocket serverSocket = new ServerSocket(PORT);
-                System.out.println("Listening on port 5000");
+                System.out.println("Listening on port " + PORT);
                 Socket clienSocket = serverSocket.accept();
+                System.out.println("Client connected");
                 inputStream = new DataInputStream(clienSocket.getInputStream());
                 outputStream = new DataOutputStream(clienSocket.getOutputStream());
                 boolean loggedIn = handleAuth();
                 outputStream.writeBoolean(loggedIn);
                 if (loggedIn) {
+                    System.out.println("User logged in successfully");
                     receiveFile();
                 } else {
                     System.out.println("Error logging in user");
@@ -77,7 +79,7 @@ public class Server {
                 byte[] decryptedData = decrypt(buffer);
                 fileOutputStream.write(decryptedData, 0, bytes);
                 fileSize -= bytes;
-                System.out.println("Writing file");
+                System.out.println("Writing decrypted data to file");
             }
             System.out.println("File uploaded to server");
 
@@ -95,6 +97,7 @@ public class Server {
         }
     }
 
+    // Decrypt using XOR operation
     private static byte[] decrypt(byte[] buffer) {
         int i = 0;
         byte[] decryptedData = new byte[4 * 1024];
@@ -117,6 +120,7 @@ public class Server {
         }
     }
 
+    // Calculate MD5 hash for file contents for integrity check
     private static String getChecksum() {
         try {
             MessageDigest mdigest = MessageDigest.getInstance("MD5");
@@ -144,6 +148,7 @@ public class Server {
     }
 }
 
+// Class handles authentication
 class FTPAuthentication {
     private static FileWriter dbWriter = null;
     private static FileReader dbReader = null;
@@ -159,7 +164,7 @@ class FTPAuthentication {
             writer.newLine();
             writer.close();
             dbWriter.close();
-            System.out.println("User has signed up and logged in");
+            System.out.println("User has signed up successfully");
             return true;
         } catch (Exception e) {
             e.printStackTrace();

@@ -77,9 +77,9 @@ public class Client {
     }
 
     private static void proceedWithFileTransfer() {
-        System.out.println("Enter path of file to upload:(folder/filename.pdf)");
+        System.out.println("Enter path of file to upload:(input/mountain.jpeg)");
         String path = scanner.nextLine();
-        System.out.println("Enter output file name:(output.png)");
+        System.out.println("Enter output file name:(output.jpeg)");
         String outputFile = scanner.nextLine();
         sendFile(path, outputFile);
     }
@@ -97,7 +97,7 @@ public class Client {
                     byte[] encryptedData = encrypt(buffer);
                     outputStream.write(encryptedData, 0, bytes);
                     outputStream.flush();
-                    System.out.println("File written to stream");
+                    System.out.println("Writing encrypted data to stream");
                 }
                 fileInputStream.close();
                 fileInputStream = null;
@@ -114,6 +114,7 @@ public class Client {
         }
     }
 
+    // Encrypt using XOR operation
     private static byte[] encrypt(byte[] buffer) {
         int i = 0;
         byte[] encryptedData = new byte[4 * 1024];
@@ -125,6 +126,7 @@ public class Client {
         return encryptedData;
     }
 
+    // Calculate MD5 hash for file contents for integrity check
     private static String getChecksum() {
         try {
             MessageDigest mdigest = MessageDigest.getInstance("MD5");
