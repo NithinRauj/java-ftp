@@ -1,6 +1,6 @@
 - [X] Build basic file transfer functionality
 - [X] Build basic authentication service
-- [ ] Encrypt and Decrypt file before and after transfer
+- [X] Encrypt and Decrypt file before and after transfer
 - [ ] Implement Byzantine faults in server
 - [X] If requested file doesn't exist throw error on server and close socket connection
 - [X] Check if file contents are same in client and server

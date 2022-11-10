@@ -4,7 +4,11 @@ import java.util.Scanner;
 import java.security.MessageDigest;
 
 public class Client {
+    // Constants
     private static final int PORT = 5000;
+    private static final String HOST = "localhost";
+    private static final int KEY = 1217;
+
     private static Socket socket = null;
     private static DataInputStream inputStream = null;
     private static DataOutputStream outputStream = null;
@@ -37,7 +41,7 @@ public class Client {
             System.out.println("Enter password:");
             String password = scanner.nextLine().trim();
 
-            socket = new Socket("localhost", PORT);
+            socket = new Socket(HOST, PORT);
             System.out.println("Connected to server on port " + PORT);
             outputStream = new DataOutputStream(socket.getOutputStream());
             inputStream = new DataInputStream(socket.getInputStream());
@@ -90,7 +94,8 @@ public class Client {
                 outputStream.writeUTF(outputFile);
                 byte[] buffer = new byte[4 * 1024];
                 while ((bytes = fileInputStream.read(buffer)) != -1) {
-                    outputStream.write(buffer, 0, bytes);
+                    byte[] encryptedData = encrypt(buffer);
+                    outputStream.write(encryptedData, 0, bytes);
                     outputStream.flush();
                     System.out.println("File written to stream");
                 }
@@ -107,7 +112,17 @@ public class Client {
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
 
+    private static byte[] encrypt(byte[] buffer) {
+        int i = 0;
+        byte[] encryptedData = new byte[4 * 1024];
+        i = 0;
+        for (byte b : buffer) {
+            encryptedData[i] = (byte) (b ^ KEY);
+            i++;
+        }
+        return encryptedData;
     }
 
     private static String getChecksum() {

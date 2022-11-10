@@ -6,6 +6,8 @@ import java.net.ServerSocket;
 
 public class Server {
     private static final int PORT = 5000;
+    private static final int KEY = 1217;
+
     private static DataInputStream inputStream = null;
     private static DataOutputStream outputStream = null;
     private static FileOutputStream fileOutputStream = null;
@@ -15,23 +17,24 @@ public class Server {
     public static void main(String[] args) {
         System.out.println("---FTP Server---");
         try {
-            ServerSocket serverSocket = new ServerSocket(PORT);
-            System.out.println("Listening on port 5000");
-            Socket clienSocket = serverSocket.accept();
-            inputStream = new DataInputStream(clienSocket.getInputStream());
-            outputStream = new DataOutputStream(clienSocket.getOutputStream());
-            boolean loggedIn = handleAuth();
-            outputStream.writeBoolean(loggedIn);
-            if (loggedIn) {
-                receiveFile();
-            } else {
-                System.out.println("Error logging in user");
+            while (true) {
+                ServerSocket serverSocket = new ServerSocket(PORT);
+                System.out.println("Listening on port 5000");
+                Socket clienSocket = serverSocket.accept();
+                inputStream = new DataInputStream(clienSocket.getInputStream());
+                outputStream = new DataOutputStream(clienSocket.getOutputStream());
+                boolean loggedIn = handleAuth();
+                outputStream.writeBoolean(loggedIn);
+                if (loggedIn) {
+                    receiveFile();
+                } else {
+                    System.out.println("Error logging in user");
+                }
+                inputStream.close();
+                outputStream.close();
+                clienSocket.close();
+                serverSocket.close();
             }
-            inputStream.close();
-            outputStream.close();
-            clienSocket.close();
-            serverSocket.close();
-
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -69,9 +72,10 @@ public class Server {
             fileOutputStream = new FileOutputStream(file);
             int bytes = 0;
             byte[] buffer = new byte[4 * 1024];
-            while (fileSize > 0
-                    && (bytes = inputStream.read(buffer, 0, (int) Math.min(buffer.length, fileSize))) != -1) {
-                fileOutputStream.write(buffer, 0, bytes);
+            while (fileSize > 0 && (bytes = inputStream.read(buffer, 0,
+                    (int) Math.min(buffer.length, fileSize))) != -1) {
+                byte[] decryptedData = decrypt(buffer);
+                fileOutputStream.write(decryptedData, 0, bytes);
                 fileSize -= bytes;
                 System.out.println("Writing file");
             }
@@ -82,14 +86,24 @@ public class Server {
             if (isCorrect) {
                 System.out.println("Transfered file passed integrity check");
             } else {
-                System.out.println("Transfered file failed integrity check.Retrying transfer");
-                // TODO Retry transfer
+                System.out.println("Transfered file failed integrity check");
             }
             fileOutputStream.close();
             fileInputStream.close();
         } catch (Exception e) {
             e.printStackTrace();
         }
+    }
+
+    private static byte[] decrypt(byte[] buffer) {
+        int i = 0;
+        byte[] decryptedData = new byte[4 * 1024];
+        i = 0;
+        for (byte b : buffer) {
+            decryptedData[i] = (byte) (b ^ KEY);
+            i++;
+        }
+        return decryptedData;
     }
 
     private static boolean checkIntegrity() {
@@ -153,7 +167,7 @@ class FTPAuthentication {
         }
     }
 
-    boolean signIn(String username, String password) {
+    boolean signIn(String username, String password) throws IOException {
         fetchCredentials();
         String fetchedPassword = creds.get(username);
         if (fetchedPassword != null && fetchedPassword.equals(password)) {
@@ -165,7 +179,7 @@ class FTPAuthentication {
         }
     }
 
-    private void fetchCredentials() {
+    private void fetchCredentials() throws IOException {
         try {
             dbReader = new FileReader("creds.txt");
             BufferedReader reader = new BufferedReader(dbReader);
@@ -175,6 +189,10 @@ class FTPAuthentication {
                 String[] values = cred.split(":");
                 creds.put(values[0], values[1]);
             }
+        } catch (FileNotFoundException e) {
+            File credsFile = new File("creds.txt");
+            credsFile.createNewFile();
+            fetchCredentials();
         } catch (Exception e) {
             e.printStackTrace();
         }
