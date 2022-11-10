@@ -3,6 +3,5 @@
 - [ ] Encrypt and Decrypt file before and after transfer
 - [ ] Implement Byzantine faults in server
 - [X] If requested file doesn't exist throw error on server and close socket connection
-- [ ] Check if file contents are same in client and server
+- [X] Check if file contents are same in client and server
 - [ ] If not try for a max of 5 times and if still unsuccessful show error message and close        connection
-

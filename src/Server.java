@@ -1,12 +1,15 @@
 import java.io.*;
 import java.util.HashMap;
 import java.net.Socket;
+import java.security.MessageDigest;
 import java.net.ServerSocket;
 
 public class Server {
     private static final int PORT = 5000;
     private static DataInputStream inputStream = null;
     private static DataOutputStream outputStream = null;
+    private static FileOutputStream fileOutputStream = null;
+    private static FileInputStream fileInputStream = null;
     private static FTPAuthentication authenticator = null;
 
     public static void main(String[] args) {
@@ -63,7 +66,7 @@ public class Server {
             }
             String outputFile = inputStream.readUTF();
             File file = new File(outputFile);
-            FileOutputStream fileOutputStream = new FileOutputStream(file);
+            fileOutputStream = new FileOutputStream(file);
             int bytes = 0;
             byte[] buffer = new byte[4 * 1024];
             while (fileSize > 0
@@ -73,9 +76,56 @@ public class Server {
                 System.out.println("Writing file");
             }
             System.out.println("File uploaded to server");
+
+            fileInputStream = new FileInputStream(file);
+            boolean isCorrect = checkIntegrity();
+            if (isCorrect) {
+                System.out.println("Transfered file passed integrity check");
+            } else {
+                System.out.println("Transfered file failed integrity check.Retrying transfer");
+                // TODO Retry transfer
+            }
             fileOutputStream.close();
+            fileInputStream.close();
         } catch (Exception e) {
             e.printStackTrace();
+        }
+    }
+
+    private static boolean checkIntegrity() {
+        try {
+            String clientChecksum = inputStream.readUTF();
+            String serverChecksum = getChecksum();
+            return clientChecksum.equals(serverChecksum);
+        } catch (Exception e) {
+            e.printStackTrace();
+            return false;
+        }
+    }
+
+    private static String getChecksum() {
+        try {
+            MessageDigest mdigest = MessageDigest.getInstance("MD5");
+
+            byte[] byteArray = new byte[1024];
+            int bytesCount = 0;
+
+            while ((bytesCount = fileInputStream.read(byteArray)) != -1) {
+                mdigest.update(byteArray, 0, bytesCount);
+            }
+            fileInputStream.close();
+            byte[] bytes = mdigest.digest();
+            StringBuilder sb = new StringBuilder();
+
+            for (int i = 0; i < bytes.length; i++) {
+                sb.append(Integer
+                        .toString((bytes[i] & 0xff) + 0x100, 16)
+                        .substring(1));
+            }
+            return sb.toString();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "";
         }
     }
 }

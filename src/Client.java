@@ -1,12 +1,14 @@
 import java.io.*;
 import java.net.Socket;
 import java.util.Scanner;
+import java.security.MessageDigest;
 
 public class Client {
     private static final int PORT = 5000;
     private static Socket socket = null;
     private static DataInputStream inputStream = null;
     private static DataOutputStream outputStream = null;
+    private static FileInputStream fileInputStream = null;
     private static Scanner scanner = new Scanner(System.in);
 
     public static void main(String[] args) {
@@ -20,7 +22,6 @@ public class Client {
             if (option.equals("2")) {
                 signUp();
             }
-            inputStream.close();
             outputStream.close();
             socket.close();
 
@@ -32,9 +33,9 @@ public class Client {
     private static void signIn() {
         try {
             System.out.println("Enter username:");
-            String username = scanner.nextLine();
+            String username = scanner.nextLine().trim();
             System.out.println("Enter password:");
-            String password = scanner.nextLine();
+            String password = scanner.nextLine().trim();
 
             socket = new Socket("localhost", PORT);
             System.out.println("Connected to server on port " + PORT);
@@ -48,6 +49,7 @@ public class Client {
             } else {
                 System.out.println("Client failed to log in");
             }
+            inputStream.close();
         } catch (Exception e) {
             e.printStackTrace();
         }
@@ -71,7 +73,7 @@ public class Client {
     }
 
     private static void proceedWithFileTransfer() {
-        System.out.println("Enter path of file to upload:");
+        System.out.println("Enter path of file to upload:(folder/filename.pdf)");
         String path = scanner.nextLine();
         System.out.println("Enter output file name:(output.png)");
         String outputFile = scanner.nextLine();
@@ -83,7 +85,7 @@ public class Client {
             int bytes = 0;
             File file = new File(path);
             if (file.exists() && file.isFile()) {
-                FileInputStream fileInputStream = new FileInputStream(file);
+                fileInputStream = new FileInputStream(file);
                 outputStream.writeLong(file.length());
                 outputStream.writeUTF(outputFile);
                 byte[] buffer = new byte[4 * 1024];
@@ -93,6 +95,11 @@ public class Client {
                     System.out.println("File written to stream");
                 }
                 fileInputStream.close();
+                fileInputStream = null;
+                fileInputStream = new FileInputStream(file);
+                String checksum = getChecksum();
+                outputStream.writeUTF(checksum);
+                fileInputStream.close();
             } else {
                 System.out.println("File not found.Aborting transfer");
                 outputStream.writeLong(0);
@@ -101,5 +108,30 @@ public class Client {
             e.printStackTrace();
         }
 
+    }
+
+    private static String getChecksum() {
+        try {
+            MessageDigest mdigest = MessageDigest.getInstance("MD5");
+            byte[] byteArray = new byte[1024];
+            int bytesCount = 0;
+
+            while ((bytesCount = fileInputStream.read(byteArray)) != -1) {
+                mdigest.update(byteArray, 0, bytesCount);
+            }
+            fileInputStream.close();
+
+            byte[] bytes = mdigest.digest();
+            StringBuilder sb = new StringBuilder();
+            for (int i = 0; i < bytes.length; i++) {
+                sb.append(Integer
+                        .toString((bytes[i] & 0xff) + 0x100, 16)
+                        .substring(1));
+            }
+            return sb.toString();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return "";
+        }
     }
 }
