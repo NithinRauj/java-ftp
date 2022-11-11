@@ -1,11 +1,12 @@
 import java.io.*;
 import java.util.HashMap;
+import java.util.Scanner;
 import java.net.Socket;
 import java.security.MessageDigest;
 import java.net.ServerSocket;
 
 public class Server {
-    private static final int PORT = 5000;
+    private static int port;
     private static final int KEY = 1217;
 
     private static DataInputStream inputStream = null;
@@ -13,13 +14,16 @@ public class Server {
     private static FileOutputStream fileOutputStream = null;
     private static FileInputStream fileInputStream = null;
     private static FTPAuthentication authenticator = null;
+    private static Scanner scanner = new Scanner(System.in);
 
     public static void main(String[] args) {
         System.out.println("---FTP Server---");
         try {
+            System.out.println("Enter port");
+            port = Integer.parseInt(scanner.nextLine());
             while (true) {
-                ServerSocket serverSocket = new ServerSocket(PORT);
-                System.out.println("Listening on port " + PORT);
+                ServerSocket serverSocket = new ServerSocket(port);
+                System.out.println("Listening on port " + port);
                 Socket clienSocket = serverSocket.accept();
                 System.out.println("Client connected");
                 inputStream = new DataInputStream(clienSocket.getInputStream());

@@ -4,9 +4,8 @@ import java.util.Scanner;
 import java.security.MessageDigest;
 
 public class Client {
-    // Constants
-    private static final int PORT = 5000;
-    private static final String HOST = "localhost";
+    private static int port;
+    private static String host;
     private static final int KEY = 1217;
 
     private static Socket socket = null;
@@ -18,6 +17,10 @@ public class Client {
     public static void main(String[] args) {
         System.out.println("---FTP Client---");
         try {
+            System.out.println("Enter hostname");
+            host = scanner.nextLine();
+            System.out.println("Enter port");
+            port = Integer.parseInt(scanner.nextLine());
             System.out.println("Enter 1 to signin and 2 to sign up");
             String option = scanner.nextLine();
             if (option.equals("1")) {
@@ -41,8 +44,8 @@ public class Client {
             System.out.println("Enter password:");
             String password = scanner.nextLine().trim();
 
-            socket = new Socket(HOST, PORT);
-            System.out.println("Connected to server on port " + PORT);
+            socket = new Socket(host, port);
+            System.out.println("Connected to server on port " + port);
             outputStream = new DataOutputStream(socket.getOutputStream());
             inputStream = new DataInputStream(socket.getInputStream());
             outputStream.writeUTF("1:" + username + ":" + password);
@@ -66,8 +69,8 @@ public class Client {
             System.out.println("Enter password:");
             String password = scanner.nextLine();
 
-            socket = new Socket("localhost", PORT);
-            System.out.println("Connected to server on port " + PORT);
+            socket = new Socket(host, port);
+            System.out.println("Connected to server on port " + port);
             outputStream = new DataOutputStream(socket.getOutputStream());
             outputStream.writeUTF("2:" + username + ":" + password);
             proceedWithFileTransfer();
